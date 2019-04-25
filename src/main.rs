@@ -3,6 +3,8 @@
 extern crate minifb;
 use minifb::{Key, WindowOptions, Window};
 
+use std::thread;
+use std::time::Duration;
 use std::time::Instant;
 
 mod emu;
@@ -11,7 +13,7 @@ use emu::CPU;
 fn main() {
     //Init emulator
     let mut cpu = CPU::new();
-    cpu.load_rom("ROMs/PONG");
+    cpu.load_rom("ROMs/INVADERS");
 
     //Init window
     let scale : usize = 6;
@@ -23,7 +25,7 @@ fn main() {
     let mut window = Window::new("CHIPBOI", screen_width, screen_height, WindowOptions::default()).unwrap();
 
     //Frame limiting
-    let frame_delta : u128 = 1000 / 1000;
+    let frame_delta : u128 = 1000 / 60;
     let mut last_frame_time = Instant::now();
 
     //Input map
@@ -38,12 +40,14 @@ fn main() {
     ];
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
+        thread::sleep(Duration::from_millis(1));
+
+        //Step cpu
+        cpu.step();
+
         //60 hz loop
         if last_frame_time.elapsed().as_millis() >= frame_delta {
             last_frame_time = Instant::now();
-
-            //Step cpu
-            cpu.step();
 
             //Update dt, st
             cpu.update_timers();  
@@ -63,7 +67,7 @@ fn main() {
                 for y in 0..height {
                     for scr_x in x*scale..(x+1)*scale {
                         for scr_y in y*scale..(y+1)*scale {
-                            buffer[scr_y * screen_width + scr_x] = if cpu.screen.get_pixel(x as u8, y as u8) { 4000 } else { 0 };
+                            buffer[scr_y * screen_width + scr_x] = if cpu.screen.get_pixel(x as u8, y as u8) { u32::max_value() } else { 0 };
                         }
                     }
                 }
