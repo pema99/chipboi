@@ -1,7 +1,9 @@
 #![allow(unused)]
 
-extern crate piston_window;
-use piston_window::*;
+extern crate minifb;
+use minifb::{Key, WindowOptions, Window};
+
+use std::time::Instant;
 
 mod emu;
 use emu::CPU;
@@ -12,63 +14,61 @@ fn main() {
     cpu.load_rom("ROMs/PONG");
 
     //Init window
-    let scale : u32 = 6;
-    let mut window: PistonWindow = 
-        WindowSettings::new("CHIPBOI", [64*scale, 32*scale])
-        .exit_on_esc(true)
-        .vsync(true)
-        .build().unwrap();
+    let scale : usize = 6;
+    let width = 64;
+    let height = 32;
+    let screen_width = width * scale;
+    let screen_height = height * scale;
+    let mut buffer: Vec<u32> = vec![0; screen_width * screen_height];
+    let mut window = Window::new("CHIPBOI", screen_width, screen_height, WindowOptions::default()).unwrap();
 
-    //Keyboard map
-    let input_map = [
+    //Frame limiting
+    let frame_delta : u128 = 1000 / 1000;
+    let mut last_frame_time = Instant::now();
+
+    //Input map
+    let input_map : [Key; 16] = [	
         Key::X,
         
-        Key::D1, Key::D2, Key::D3,
+        Key::Key1, Key::Key2, Key::Key3,
         Key::Q,  Key::W,  Key::E,
         Key::A,  Key::S,  Key::D,
 
-        Key::Z, Key::C, Key::D4, Key::R, Key::F, Key::V
+        Key::Z, Key::C, Key::Key4, Key::R, Key::F, Key::V
     ];
-    
-    let mut events = Events::new(EventSettings::new());
-    while let Some(e) = events.next(&mut window) {
-        if let Some(r) = e.render_args() {
-            //For cpu instruction just go fast (TM). Ok, this is epic code.
-            for i in 0..10 {
-                cpu.step();
-            }
 
-            //Update timers at 60hz
-            cpu.update_timers();
+    while window.is_open() && !window.is_key_down(Key::Escape) {
+        //60 hz loop
+        if last_frame_time.elapsed().as_millis() >= frame_delta {
+            last_frame_time = Instant::now();
 
-            //Draw screen
-            window.draw_2d(&e, |c, g| {               
-                for x in 0..64 {
-                    for y in 0..32 {
-                        let color : [f32; 4] = if cpu.screen.get_pixel(x, y) { [0.0, 0.0, 0.0, 1.0] } else { [1.0; 4] };
-                        rectangle(color, 
-                            [(x as u32 * scale) as f64, (y as u32 * scale) as f64, scale as f64, scale as f64], 
-                            c.transform, 
-                            g);
-                    }
-                }
-            });
-        }
+            //Step cpu
+            cpu.step();
 
-        //Input
-        if let Some(Button::Keyboard(button)) = e.press_args() {
+            //Update dt, st
+            cpu.update_timers();  
+
+            //Read input
             for i in 0..16 {
-                if input_map[i] == button {
+                if window.is_key_down(input_map[i]) {
                     cpu.input[i] = true;
                 }
-            }
-        }
-        if let Some(Button::Keyboard(button)) = e.release_args() {
-            for i in 0..16 {
-                if input_map[i] == button {
+                else {
                     cpu.input[i] = false;
                 }
             }
-        }
+
+            //Only need to write to display at 60 fps      
+            for x in 0..width {
+                for y in 0..height {
+                    for scr_x in x*scale..(x+1)*scale {
+                        for scr_y in y*scale..(y+1)*scale {
+                            buffer[scr_y * screen_width + scr_x] = if cpu.screen.get_pixel(x as u8, y as u8) { 4000 } else { 0 };
+                        }
+                    }
+                }
+            }
+            window.update_with_buffer(&buffer).unwrap();
+        }        
     }
 }
