@@ -58,24 +58,17 @@ impl CPU {
         result
     }
 
-    pub fn load_rom(&mut self, path : &str) {
-        let mut f = File::open(path);
-        match f {
-            Ok(mut f) => {
-                let mut buffer = Vec::new();
+    pub fn load_rom(&mut self, path : &str) -> Result<(), &'static str> {
+        let mut f = File::open(path).map_err(|_| "Could not open file.")?;
 
-                let success = f.read_to_end(&mut buffer);
-                match success {
-                    Ok(e) => {
-                        for i in 0..e {
-                            self.mem.write(512 + i as u16, buffer[i]);
-                        }
-                    }
-                    Err(e) => println!("Could not load rom to memory.")
-                }
-            },
-            Err(f) => println!("Could not open file.")
+        let mut buffer = Vec::new();
+        let e = f.read_to_end(&mut buffer).map_err(|_| "Could not load rom to memory.")?;
+        
+        for i in 0..e {
+            self.mem.write(512 + i as u16, buffer[i]);
         }
+
+        Ok(())
     }
 
     pub fn step(&mut self) {
@@ -167,23 +160,23 @@ impl CPU {
         }
     }
 
-    pub fn op_err(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
+    fn op_err(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
         panic!("Invalid opcode");
     }
 
-    pub fn op_cls(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
+    fn op_cls(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
         self.screen.clear_screen();
     }
 
-    pub fn op_ret(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
+    fn op_ret(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
         self.pc = self.stack.pop();
     }
 
-    pub fn op_sys(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
+    fn op_sys(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
         //Nothing
     }
 
-    pub fn op_jp(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
+    fn op_jp(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
         if (op == 1) {
             self.pc = nnn - 2;
         }
@@ -192,12 +185,12 @@ impl CPU {
         }
     }
 
-    pub fn op_call(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
+    fn op_call(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
         self.stack.push(self.pc);
         self.pc = nnn - 2;
     }
 
-    pub fn op_se(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
+    fn op_se(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
         if op == 3 {
             if self.regs.getv(x) == kk {
                 self.pc += 2;
@@ -210,7 +203,7 @@ impl CPU {
         }
     }
 
-    pub fn op_sne(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
+    fn op_sne(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
         if op == 4 {
             if self.regs.getv(x) != kk {
                 self.pc += 2;
@@ -223,7 +216,7 @@ impl CPU {
         }
     }
 
-    pub fn op_ld(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
+    fn op_ld(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
         if op == 6 {
             self.regs.setv(x, kk);
         }
@@ -257,7 +250,7 @@ impl CPU {
         }
     }
 
-    pub fn op_add(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
+    fn op_add(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
         if op == 7 {
             self.regs.setv(x, self.regs.getv(x).wrapping_add(kk));
         }
@@ -271,50 +264,50 @@ impl CPU {
         }
     }
 
-    pub fn op_or(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
+    fn op_or(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
         if op == 8 {
             self.regs.setv(x, self.regs.getv(x) | self.regs.getv(y));
         }
     }
 
-    pub fn op_xor(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
+    fn op_xor(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
         if op == 8 {
             self.regs.setv(x, self.regs.getv(x) ^ self.regs.getv(y));
         }
     }
 
-    pub fn op_and(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
+    fn op_and(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
         if op == 8 {
             self.regs.setv(x, self.regs.getv(x) & self.regs.getv(y));
         }
     }
 
-    pub fn op_sub(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
+    fn op_sub(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
         self.regs.setv(0xF, if self.regs.getv(x) > self.regs.getv(y) { 1 } else { 0 });
         self.regs.setv(x, self.regs.getv(x).wrapping_sub(self.regs.getv(y)));
     }
 
-    pub fn op_shr(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
+    fn op_shr(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
         self.regs.setv(0xF, if self.regs.getv(x) & 1 == 1 { 1 } else { 0 });
         self.regs.setv(x, self.regs.getv(x).wrapping_div(2));
     }
 
-    pub fn op_subn(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
+    fn op_subn(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
         self.regs.setv(0xF, if self.regs.getv(y) > self.regs.getv(x) { 1 } else { 0 });
         self.regs.setv(x, self.regs.getv(y).wrapping_sub(self.regs.getv(x)));
     }
 
-    pub fn op_shl(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
+    fn op_shl(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
         self.regs.setv(0xF, if self.regs.getv(x) & 0b10000000 != 0 { 1 } else { 0 });
         self.regs.setv(x, self.regs.getv(x).wrapping_mul(2));
     }
 
-    pub fn op_rnd(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
+    fn op_rnd(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
         let rnd: u8 = self.rng.gen();
         self.regs.setv(x, rnd & kk);
     }
 
-    pub fn op_drw(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
+    fn op_drw(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
         let sprite_height = n as usize;
         let mut sprite = vec![0; sprite_height];
         for i in 0..sprite_height {
@@ -323,13 +316,13 @@ impl CPU {
         self.screen.draw_sprite(self.regs.getv(x), self.regs.getv(y), &sprite);
     }
 
-    pub fn op_skp(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
+    fn op_skp(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
         if (self.input[self.regs.getv(x) as usize]) {
             self.pc += 2;
         }
     }
 
-    pub fn op_sknp(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
+    fn op_sknp(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
         if (!self.input[self.regs.getv(x) as usize]) {
             self.pc += 2;
         }

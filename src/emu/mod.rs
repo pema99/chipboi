@@ -1,3 +1,4 @@
 mod mem;
 mod gfx;
-pub mod cpu;
+mod cpu;
+pub use cpu::CPU;

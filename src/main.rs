@@ -4,7 +4,7 @@ extern crate piston_window;
 use piston_window::*;
 
 mod emu;
-use emu::cpu::CPU;
+use emu::CPU;
 
 fn main() {
     //Init emulator
