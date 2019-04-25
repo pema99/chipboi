@@ -9,7 +9,7 @@ use emu::CPU;
 fn main() {
     //Init emulator
     let mut cpu = CPU::new();
-    cpu.load_rom("ROMs/minimal_game.ch8");
+    cpu.load_rom("ROMs/PONG");
 
     //Init window
     let scale : u32 = 6;
