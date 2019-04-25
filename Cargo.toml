@@ -1,0 +1,9 @@
+[package]
+name = "chipboi"
+version = "0.1.0"
+authors = ["pema99 <pemamalling@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+rand = "0.6.5"
+piston_window = "0.81.0"
