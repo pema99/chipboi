@@ -13,7 +13,7 @@ use emu::CPU;
 fn main() {
     //Init emulator
     let mut cpu = CPU::new();
-    cpu.load_rom("ROMs/INVADERS");
+    cpu.load_rom("ROMs/BLINKY");
 
     //Init window
     let scale : usize = 6;

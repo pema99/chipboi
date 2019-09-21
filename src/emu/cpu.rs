@@ -57,6 +57,8 @@ impl CPU {
         let y   = ((opcode & 0x00F0) >> 4) as u8;
         let kk  = (opcode & 0x00FF) as u8;
 
+        //println!("{} {:04X?} {} {:?} {:?}", self.pc, opcode, self.regs.i, self.stack.data, self.regs.v);
+
         //Fetch instruction
         let instr : Instruction = match op {
             0x0 => match nnn {
@@ -106,18 +108,6 @@ impl CPU {
 
         //Execute instruction
         instr(self, op, nnn, n, x, y, kk);
-
-        //FIXME
-        /*println!("Opcode: {:x}", opcode);
-        println!("op={:x}, nnn={:x}, n={:x}, x={:x}, y={:x}", op, nnn, n, x, y);
-        print!("v=[");
-        print!("{:x}", self.regs.getv(0));
-        for i in 1..16 {
-            print!(", {:x}", self.regs.getv(i));
-        }
-        println!("]");
-        println!("i={:x}", self.regs.i);
-        println!("");*/
 
         //Increase program counter
         self.pc += 2;
@@ -213,13 +203,19 @@ impl CPU {
                     self.mem.write(self.regs.i+1, ((vx % 10_i32.pow(2)) / 10_i32.pow(2-1)) as u8);
                     self.mem.write(self.regs.i+2, ((vx % 10_i32.pow(1)) / 10_i32.pow(1-1)) as u8);
                 },
-                0x55 => for i in 0..x as u16 {
-                    self.mem.write(self.regs.i + i, self.regs.getv(i as u8));
+                0x55 => {
+                    for i in 0..(x+1) as u16 {
+                        self.mem.write(self.regs.i + i, self.regs.getv(i as u8));
+                    }
+                    self.regs.i += x as u16 + 1;
                 },
-                0x65 => for i in 0..x as u16 {
-                    self.regs.setv(i as u8, self.mem.read(self.regs.i + i));
+                0x65 => { 
+                    for i in 0..(x+1) as u16 {
+                        self.regs.setv(i as u8, self.mem.read(self.regs.i + i));
+                    }
+                    self.regs.i += x as u16 + 1; 
                 },
-                _ => {}
+                _ => { panic!(); }
             }
         }
     }

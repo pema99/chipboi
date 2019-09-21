@@ -1,5 +1,5 @@
 pub struct Registers {
-    v: [u8; 16],
+    pub v: [u8; 16],
     pub i: u16,
     pub dt: u8,
     pub st: u8
@@ -25,8 +25,8 @@ impl Registers {
 }
 
 pub struct Stack {
-    data: [u16; 16],
-    sp: u8
+    pub data: [u16; 16],
+    pub sp: u8
 }
 
 impl Stack {
