@@ -16,7 +16,10 @@ pub struct CPU {
     regs: Registers,
     stack: Stack,
     pc: u16,
-    rng: ThreadRng
+    rng: ThreadRng,
+
+    pub legacy_ld_sta: bool,
+    pub legacy_shl_shr: bool
 }
 
 impl CPU {
@@ -28,7 +31,10 @@ impl CPU {
             regs: Registers::new(),
             stack: Stack::new(),
             pc: 512,
-            rng: rand::thread_rng()
+            rng: rand::thread_rng(),
+
+            legacy_ld_sta: false,
+            legacy_shl_shr: false
         }
     }
 
@@ -207,13 +213,17 @@ impl CPU {
                     for i in 0..(x+1) as u16 {
                         self.mem.write(self.regs.i + i, self.regs.getv(i as u8));
                     }
-                    self.regs.i += x as u16 + 1;
+                    if self.legacy_ld_sta {
+                        self.regs.i += x as u16 + 1;
+                    }
                 },
                 0x65 => { 
                     for i in 0..(x+1) as u16 {
                         self.regs.setv(i as u8, self.mem.read(self.regs.i + i));
                     }
-                    self.regs.i += x as u16 + 1; 
+                    if self.legacy_ld_sta {
+                        self.regs.i += x as u16 + 1; 
+                    }
                 },
                 _ => { panic!(); }
             }
@@ -258,8 +268,14 @@ impl CPU {
     }
 
     fn op_shr(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
-        self.regs.setv(0xF, if self.regs.getv(x) & 1 == 1 { 1 } else { 0 });
-        self.regs.setv(x, self.regs.getv(x).wrapping_div(2));
+        if self.legacy_shl_shr {
+            self.regs.setv(0xF, self.regs.getv(y) & 1);
+            self.regs.setv(x, self.regs.getv(y) >> 1);
+        }
+        else {
+            self.regs.setv(0xF, self.regs.getv(x) & 1);
+            self.regs.setv(x, self.regs.getv(x) >> 1);
+        }
     }
 
     fn op_subn(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
@@ -268,8 +284,14 @@ impl CPU {
     }
 
     fn op_shl(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
-        self.regs.setv(0xF, if self.regs.getv(x) & 0b10000000 != 0 { 1 } else { 0 });
-        self.regs.setv(x, self.regs.getv(x).wrapping_mul(2));
+        if self.legacy_shl_shr {
+            self.regs.setv(0xF, (self.regs.getv(y) & 0x80) >> 7);
+            self.regs.setv(x, self.regs.getv(y) << 1);
+        }
+        else {
+            self.regs.setv(0xF, (self.regs.getv(x) & 0x80) >> 7);
+            self.regs.setv(x, self.regs.getv(x) << 1);
+        }
     }
 
     fn op_rnd(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {
@@ -283,7 +305,7 @@ impl CPU {
         for i in 0..sprite_height {
             sprite[i] = self.mem.read(self.regs.i + i as u16);
         }
-        self.screen.draw_sprite(self.regs.getv(x), self.regs.getv(y), &sprite);
+        self.regs.setv(0xF, if self.screen.draw_sprite(self.regs.getv(x), self.regs.getv(y), &sprite) { 1 } else { 0 });
     }
 
     fn op_skp(&mut self, op: u8, nnn: u16, n: u8, x: u8, y: u8, kk: u8) {

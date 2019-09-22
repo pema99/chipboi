@@ -1,7 +1,7 @@
 #![allow(unused)]
 
 extern crate minifb;
-use minifb::{Key, WindowOptions, Window};
+use minifb::{Key, KeyRepeat, WindowOptions, Window};
 
 use std::thread;
 use std::time::Duration;
@@ -13,7 +13,7 @@ use emu::CPU;
 fn main() {
     //Init emulator
     let mut cpu = CPU::new();
-    cpu.load_rom("ROMs/BLINKY");
+    cpu.load_rom("ROMs/BRIX");
 
     //Init window
     let scale : usize = 6;
@@ -22,11 +22,12 @@ fn main() {
     let screen_width = width * scale;
     let screen_height = height * scale;
     let mut buffer: Vec<u32> = vec![0; screen_width * screen_height];
-    let mut window = Window::new("CHIPBOI", screen_width, screen_height, WindowOptions::default()).unwrap();
+    let mut window = Window::new("CHIPBOI - Press U to lock/unlock FPS", screen_width, screen_height, WindowOptions::default()).unwrap();
 
     //Frame limiting
     let frame_delta : u128 = 1000 / 60;
     let mut last_frame_time = Instant::now();
+    let mut unlock_fps = true;
 
     //Input map
     let input_map : [Key; 16] = [	
@@ -42,11 +43,16 @@ fn main() {
     while window.is_open() && !window.is_key_down(Key::Escape) {
         thread::sleep(Duration::from_millis(1));
 
-        //Step cpu
-        cpu.step();
+        //Check frame dt, 60 hz loop
+        let should_update = last_frame_time.elapsed().as_millis() >= frame_delta;
 
-        //60 hz loop
-        if last_frame_time.elapsed().as_millis() >= frame_delta {
+        //Step cpu
+        if should_update || unlock_fps {
+            cpu.step();
+        }
+
+        //Main event loop
+        if should_update {
             last_frame_time = Instant::now();
 
             //Update dt, st
@@ -60,6 +66,9 @@ fn main() {
                 else {
                     cpu.input[i] = false;
                 }
+            }
+            if window.is_key_pressed(Key::U, KeyRepeat::No) {
+                unlock_fps = !unlock_fps;
             }
 
             //Only need to write to display at 60 fps      

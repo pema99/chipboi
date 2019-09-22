@@ -1,5 +1,5 @@
 pub struct Registers {
-    pub v: [u8; 16],
+    v: [u8; 16],
     pub i: u16,
     pub dt: u8,
     pub st: u8
@@ -44,7 +44,9 @@ impl Stack {
 
     pub fn pop(&mut self) -> u16 {
         self.sp -= 1;
-        self.data[self.sp as usize]
+        let temp = self.data[self.sp as usize];
+        self.data[self.sp as usize] = 0;
+        temp
     }
 }
 
