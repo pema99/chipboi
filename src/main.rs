@@ -13,10 +13,44 @@ use emu::CPU;
 fn main() {
     //Init emulator
     let mut cpu = CPU::new();
-    cpu.load_rom("ROMs/BRIX");
+    
+    let mut unlock_fps = true;
+    let mut scale : usize = 6;
+
+    //CLI arguments
+    let show_help = || {
+        println!("Usage: chipboi <path to file> [Options]");
+        println!("Options:");
+        println!("  -s <scale>   set framebuffer scale to passed integer");
+        println!("  -l           use legacy instruction implementations");
+        println!("  -f           lock to 60 FPS");
+        println!("  -h           show help menu")
+    };
+
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() < 2 {
+        show_help();
+        return;
+    }
+    else {
+        cpu.load_rom(&args[1]);
+
+        for i in 0..args.len() {
+            let arg = &args[i];
+            match arg.as_ref() {
+                "-h" => show_help(),
+                "-f" => unlock_fps = false,
+                "-l" => {
+                    cpu.legacy_ld_sta = true;
+                    cpu.legacy_shl_shr = true;
+                },
+                "-s" if args.len() > i+1 => scale = args[i+1].parse::<usize>().unwrap(),
+                _ => {}
+            }
+        }
+    }
 
     //Init window
-    let scale : usize = 6;
     let width = 64;
     let height = 32;
     let screen_width = width * scale;
@@ -27,7 +61,6 @@ fn main() {
     //Frame limiting
     let frame_delta : u128 = 1000 / 60;
     let mut last_frame_time = Instant::now();
-    let mut unlock_fps = true;
 
     //Input map
     let input_map : [Key; 16] = [	
