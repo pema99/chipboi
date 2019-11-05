@@ -5,6 +5,8 @@ Works on most of the games I tested.
 
 Has a very simple CLI you can use to interface with it.
 
+![](https://i.imgur.com/g5NUGUw.png)
+
 # Usage
 Games can be loaded by passing a path to the ROM as a command line argument. For example:
 ```sh
