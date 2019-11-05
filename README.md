@@ -1,9 +1,9 @@
 # chipboi
-Chip8 interpreter in rust
+Interpreter / emulator for the Chip8 platform, written in Rust.
 
-Works on most of the games I tested
+Works on most of the games I tested.
 
-No sound :(
+Has a very simple CLI you can use to interface with it.
 
 # Usage
 Games can be loaded by passing a path to the ROM as a command line argument. For example:
